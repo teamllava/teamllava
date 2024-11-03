@@ -1,0 +1,275 @@
+<!doctype html>
+<html class="h-full overflow-y-scroll">
+
+<head>
+    <title>LLaVA | by sreeman</title>
+
+    <meta charset="utf-8" />
+    <meta name="description" content="Run [ ash] large coding language." />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:title" content="Ollama" />
+    <meta property="og:description" content="Run [ ash] large coding language." />
+    <meta property="og:url" content="https://llava.xyz" />
+    <meta property="og:image" content="/public/llava.jpeg" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="628" />
+    <meta property="og:type" content="website" />
+
+    <link href="./public/style.css" rel="stylesheet" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "llava",
+        "url": "https://llava.xyz"
+      }
+    </script>
+
+    <script type="text/javascript">
+        function copyToClipboard(element) {
+            let commandElement = null;
+            const preElement = element.closest('pre');
+            const languageNoneElement = element.closest('.language-none');
+
+            if (preElement) {
+                commandElement = preElement.querySelector('code');
+            } else if (languageNoneElement) {
+                commandElement = languageNoneElement.querySelector('.command');
+            }
+
+            if (!commandElement) {
+                console.error('No code or command element found');
+                return;
+            }
+
+            const code = commandElement.textContent ? commandElement.textContent.trim() : commandElement.value;
+
+            navigator.clipboard
+                .writeText(code)
+                .then(() => {
+                    const copyIcon = element.querySelector('.copy-icon')
+                    const checkIcon = element.querySelector('.check-icon')
+
+                    copyIcon.classList.add('hidden')
+                    checkIcon.classList.remove('hidden')
+
+                    setTimeout(() => {
+                        copyIcon.classList.remove('hidden')
+                        checkIcon.classList.add('hidden')
+                    }, 2000)
+                })
+        }
+    </script>
+    <script src="/public/bundle.js"></script>
+
+</head>
+
+<body class="
+      antialiased
+      min-h-screen
+      w-full
+      m-0
+      flex
+      flex-col
+    " hx-on:keydown="
+      if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+        // Ignore key events in input fields.
+        return;
+      }
+      if ((event.metaKey && event.key === 'k') || event.key === '/') {
+        event.preventDefault();
+        htmx.removeClass('#searchpreview', 'hidden');
+        const sp = htmx.find('#search');
+        sp.focus();
+        return;
+      }
+    ">
+    <header class="sticky top-0 z-40 bg-white underline-offset-4 lg:static">
+        <nav class="flex w-full items-center justify-between px-6 py-3.5 gap-x-2">
+            <a href="/" class="z-50">
+                <img src="/public/llava.jpeg" class="w-8" alt="LLaVA" />
+            </a>
+
+
+            <div class="hidden lg:flex items-center space-x-8 ml-8 mr-4 text-lg">
+                <a class="hover:underline" href="/blog">Blog</a>
+                <a class="hover:underline" target="_blank" href="https://discord.com/invite/llava">Discord</a>
+                <a class="hover:underline" target="_blank" href="https://github.com/thellava/teamllava">GitHub</a>
+            </div>
+
+
+            <div class="flex-grow justify-center hidden lg:flex">
+                <div class="relative w-full max-w-xs lg:max-w-[32rem]" hx-on:keydown="
+            if (event.key === 'Escape') {
+              const sp = htmx.find('#searchpreview');
+              sp.value = '';
+              sp.focus();
+              htmx.addClass('#searchpreview', 'hidden');
+              return;
+            }
+            htmx.removeClass('#searchpreview', 'hidden');
+          ">
+
+                    <div class="relative flex w-full appearance-none border border-neutral-200 items-center rounded-lg transition-all duration-300 ease-in-out transform focus-within:shadow-sm [transition:box-shadow_0s]"
+                        hx-on:focusout="
+  if (!this.contains(event.relatedTarget)) {
+    htmx.addClass('#searchpreview', 'hidden');
+  }
+">
+                        <span id="searchIcon" class="pl-2 text-2xl text-neutral-500">
+                            <svg class="mt-0.25 ml-1 h-4 w-4 fill-current" viewBox="0 0 20 20"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="m8.5 3c3.0375661 0 5.5 2.46243388 5.5 5.5 0 1.24832096-.4158777 2.3995085-1.1166416 3.3225711l4.1469717 4.1470988c.2928932.2928932.2928932.767767 0 1.0606602-.2662666.2662665-.6829303.2904726-.9765418.0726181l-.0841184-.0726181-4.1470988-4.1469717c-.9230626.7007639-2.07425014 1.1166416-3.3225711 1.1166416-3.03756612 0-5.5-2.4624339-5.5-5.5 0-3.03756612 2.46243388-5.5 5.5-5.5zm0 1.5c-2.209139 0-4 1.790861-4 4s1.790861 4 4 4 4-1.790861 4-4-1.790861-4-4-4z" />
+                            </svg>
+                        </span>
+                        <form action="/search" autocomplete="off" class="w-full">
+                            <input id="search" hx-get="/search" hx-trigger="keyup changed delay:20ms, focus"
+                                hx-target="#searchpreview" hx-swap="innerHTML" name="q"
+                                class="resize-none rounded-lg border-0 py-2.5 pr-10 text-sm w-full focus:outline-none focus:ring-0 transition-shadow duration-300 ease-in-out"
+                                placeholder="Search models" autocomplete="off" hx-on:keydown="
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      window.location.href = '/search?q=' + encodeURIComponent(this.value);
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.value = '';
+      this.blur();
+      htmx.addClass('#searchpreview', 'hidden');
+      return;
+    }
+    htmx.removeClass('#searchpreview', 'hidden');
+    " hx-on:focus="
+      htmx.removeClass('#searchpreview', 'hidden')
+    " />
+                        </form>
+                        <div id="searchpreview" class="hidden absolute left-0 right-0 top-12 z-50"
+                            style="width: calc(100% + 2px); margin-left: -1px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hidden lg:flex items-center space-x-8 ml-4 text-lg">
+                <a class="hover:underline" href="/library">Models</a>
+            </div>
+
+            <div class="lg:hidden flex items-center">
+                <input type="checkbox" id="menu" class="peer hidden" />
+                <label for="menu" class="z-50 cursor-pointer peer-checked:hidden block">
+                    <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                        aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                    </svg>
+                </label>
+                <label for="menu" class="z-50 cursor-pointer hidden peer-checked:block fixed top-4 right-6">
+                    <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                        aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </label>
+
+                <div class="fixed inset-0 bg-white z-40 hidden peer-checked:block overflow-y-auto">
+                    <div class="flex flex-col space-y-6 px-6 py-4 pt-24 text-3xl tracking-tight">
+                        <a href="/library">Models</a>
+                        <a href="/search">Search</a>
+                        <a href="https://discord.com/invite/ollama">Discord</a>
+                        <a href="/blog">Blog</a>
+                        <a href="https://github.com/ollama/ollama">GitHub</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-grow">
+
+        <main class="mx-auto flex max-w-6xl flex-1 flex-col items-center px-10 py-20 md:p-32">
+            <section class="mx-auto flex flex-col items-center space-y-8">
+                <div>
+                    <div class="flex flex-col space-y-4 text-center">
+                        <h2 class="mx-auto my-2 max-w-md text-2xl font-medium tracking-tight md:text-3xl">
+                            Run [ ash] large coding language.
+                        </h2>
+                        <h3 class="mx-auto max-w-sm text-neutral-500 md:text-lg">
+                            Run <a class="underline" href="/library/ashlang">ash</a>, Language and other
+                            models. Customize and create your own API.
+                        </h3>
+                    </div>
+                    <div class="mx-auto mt-12 hidden max-w-xs flex-col items-center space-y-4 text-center sm:flex">
+                        <a href="/library"
+                            class="flex cursor-pointer items-center rounded-lg bg-neutral-800 px-8 py-2 text-xl text-white hover:bg-black focus:outline-none">
+                            Explore models&nbsp;&nbsp;→
+                        </a>
+                        <p class="max-w-[14em] text-xs text-neutral-500">
+                            Available for macOS, Linux
+                        </p>
+                    </div>
+                    <div class="mx-auto mt-12 flex max-w-xs flex-col items-center space-y-4 text-center sm:hidden">
+                        <a href="/library"
+                            class="flex cursor-pointer items-center rounded-lg bg-neutral-800 px-8 py-2 text-xl text-white hover:bg-black focus:outline-none">
+                            Explore models&nbsp;&nbsp;→
+                        </a>
+                        <p class="max-w-[14em] text-xs text-neutral-500">
+                            Available for macOS, Linux
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+    </main>
+
+    <footer class="mt-auto">
+        <div class="bg-white underline-offset-4 hidden md:block">
+            <div class="flex items-center justify-between px-6 py-3.5">
+                <div class="text-xs text-neutral-500">© 2024 LLaVA Inc.</div>
+                <div class="flex space-x-6 text-xs text-neutral-500">
+                    <a href="/blog" class="hover:underline">Blog</a>
+                    <a href="https://github.com/ollama/ollama/tree/main/docs" class="hover:underline">Docs</a>
+                    <a href="https://github.com/ollama/ollama" class="hover:underline">GitHub</a>
+                    <a href="https://discord.com/invite/ollama" class="hover:underline">Discord</a>
+                    <a href="https://twitter.com/ollama" class="hover:underline">X (Twitter)</a>
+                    <a href="https://lu.ma/ollama" class="hover:underline">Meetups</a>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white py-4 md:hidden">
+            <div class="flex flex-col items-center justify-center">
+                <ul class="flex flex-wrap items-center justify-center text-sm text-neutral-500">
+                    <li class="mx-2 my-1">
+                        <a href="/blog" class="hover:underline">Blog</a>
+                    </li>
+                    <li class="mx-2 my-1">
+                        <a href="https://github.com/teamllava/teamllava/tree/main/docs" class="hover:underline">Docs</a>
+                    </li>
+                    <li class="mx-2 my-1">
+                        <a href="https://github.com/teamllava/teamllava" class="hover:underline">GitHub</a>
+                    </li>
+                </ul>
+                <ul class="flex flex-wrap items-center justify-center text-sm text-neutral-500">
+                    <li class="mx-2 my-1">
+                        <a href="https://discord.com/invite/llava" class="hover:underline">Discord</a>
+                    </li>
+                    <li class="mx-2 my-1">
+                        <a href="https://twitter.com/teamllava" class="hover:underline">X (Twitter)</a>
+                    </li>
+                    <li class="mx-2 my-1">
+                        <a href="https://la.va/meetups" class="hover:underline">Meetups</a>
+                    </li>
+                </ul>
+                <div class="mt-2 flex items-center justify-center text-sm text-neutral-500">
+                    © 2024 LLaVA Inc.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+
+    <span class="hidden" id="end_of_template"></span>
+</body>
+
+</html>
